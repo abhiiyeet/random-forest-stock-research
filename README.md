@@ -35,7 +35,7 @@ Date,Open,High,Low,Close,Volume
 
 Common column-name variations such as `Closing Price` and `Total Traded Quantity` are recognized automatically. Numbers may contain commas.
 
-With one CSV, the latest calendar year is automatically held out for testing and every earlier year is used for training. No random split or shuffling is used. You may instead upload a training CSV plus a chronologically later test CSV; December training history is then retained as rolling-feature context for January test observations without training on test labels.
+With one CSV or Excel workbook, the latest calendar year is automatically held out for testing and every earlier year is used for training. All non-empty Excel worksheets are combined chronologically. No random split or shuffling is used. You may instead upload a training file plus a chronologically later test file; December training history is then retained as rolling-feature context for January test observations without training on test labels.
 
 Select one or more of the five predefined features, click **Train Model**, then click **Predict & Compare**. The tool reports true held-out classification results, a naive benchmark, and a simplified long-or-cash backtest. Exports include CSV files, a formatted Excel report, the trained joblib model, and a complete ZIP research package.
 

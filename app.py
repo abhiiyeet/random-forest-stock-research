@@ -42,8 +42,17 @@ st.title("Random Forest Stock Prediction")
 st.markdown('<div class="muted">Upload historical daily stock data, train the model, and evaluate next-day UP/DOWN predictions.</div>', unsafe_allow_html=True)
 
 st.header("1. Upload Data")
-training_file = st.file_uploader("Upload Stock Data", type="csv", key="training_file")
-test_file = st.file_uploader("Optional: Upload Separate Test-Year CSV", type="csv", key="test_file")
+training_file = st.file_uploader(
+    "Upload Stock Data (CSV or Excel workbook)",
+    type=["csv", "xlsx", "xlsm", "xls"],
+    key="training_file",
+    help="For Excel workbooks, every non-empty worksheet is imported and combined chronologically.",
+)
+test_file = st.file_uploader(
+    "Optional: Upload Separate Test-Year File",
+    type=["csv", "xlsx", "xlsm", "xls"],
+    key="test_file",
+)
 
 if training_file:
     try:
@@ -96,7 +105,7 @@ if st.session_state.get("signature") not in (None, current_signature):
 if st.button("Train Model", type="primary", use_container_width=True):
     try:
         if training_file is None:
-            raise DataValidationError("Please upload a historical stock CSV before training.")
+            raise DataValidationError("Please upload a historical stock CSV or Excel workbook before training.")
         if not selected_features:
             raise DataValidationError("At least one feature must be selected.")
         training_file.seek(0)

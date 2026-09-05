@@ -11,7 +11,7 @@ from openpyxl import load_workbook
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from export_utils import create_excel_report, create_research_package
-from ml_pipeline import FEATURE_LABELS, evaluate_model, prepare_data, train_model
+from ml_pipeline import FEATURE_LABELS, clean_stock_data, evaluate_model, prepare_data, train_model
 
 
 def market_data(start_year, end_year):
@@ -76,6 +76,20 @@ class ResearchPipelineTests(unittest.TestCase):
             names = set(archive.namelist())
             self.assertIn("research_package/random_forest_model.joblib", names)
             self.assertIn("research_package/charts/strategy_vs_buy_hold.png", names)
+
+    def test_g_excel_imports_all_sheets(self):
+        workbook = io.BytesIO()
+        workbook.name = "history.xlsx"
+        data = market_data(2020, 2024)
+        chunks = np.array_split(data, 5)
+        with pd.ExcelWriter(workbook, engine="openpyxl") as writer:
+            for index, chunk in enumerate(chunks, start=1):
+                chunk.to_excel(writer, sheet_name=f"Sheet{index}", index=False)
+        workbook.seek(0)
+        cleaned = clean_stock_data(workbook)
+        self.assertEqual(len(cleaned), len(data))
+        self.assertEqual(cleaned.Date.min(), pd.Timestamp("2020-01-01"))
+        self.assertEqual(cleaned.Date.max(), pd.Timestamp("2024-12-31"))
 
 
 if __name__ == "__main__":

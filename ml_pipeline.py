@@ -70,11 +70,24 @@ def _key(value: object) -> str:
 
 
 def clean_stock_data(source: BinaryIO | str | pd.DataFrame) -> pd.DataFrame:
-    """Read, recognize and clean an OHLCV file without imputing future information."""
+    """Read, recognize and clean CSV/Excel OHLCV data without future information."""
     try:
-        frame = source.copy() if isinstance(source, pd.DataFrame) else pd.read_csv(source)
+        if isinstance(source, pd.DataFrame):
+            frame = source.copy()
+        else:
+            name = str(getattr(source, "name", source)).lower()
+            if name.endswith((".xlsx", ".xlsm", ".xls")):
+                sheets = pd.read_excel(source, sheet_name=None)
+                nonempty = [sheet for sheet in sheets.values() if not sheet.empty]
+                if not nonempty:
+                    raise DataValidationError("The uploaded workbook contains no data rows.")
+                frame = pd.concat(nonempty, ignore_index=True)
+            else:
+                frame = pd.read_csv(source)
+    except DataValidationError:
+        raise
     except Exception as exc:
-        raise DataValidationError("The uploaded file could not be read as a CSV.") from exc
+        raise DataValidationError("The uploaded file could not be read as CSV or Excel data.") from exc
     if frame.empty:
         raise DataValidationError("The uploaded file contains no data rows.")
 
