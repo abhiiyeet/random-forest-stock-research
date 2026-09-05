@@ -84,7 +84,12 @@ class ResearchPipelineTests(unittest.TestCase):
         chunks = np.array_split(data, 5)
         with pd.ExcelWriter(workbook, engine="openpyxl") as writer:
             for index, chunk in enumerate(chunks, start=1):
-                chunk.to_excel(writer, sheet_name=f"Sheet{index}", index=False)
+                startrow = 1 if index > 1 else 0
+                if startrow:
+                    pd.DataFrame([[str(2019 + index)] * 6]).to_excel(
+                        writer, sheet_name=f"Sheet{index}", index=False, header=False
+                    )
+                chunk.to_excel(writer, sheet_name=f"Sheet{index}", index=False, startrow=startrow)
         workbook.seek(0)
         cleaned = clean_stock_data(workbook)
         self.assertEqual(len(cleaned), len(data))

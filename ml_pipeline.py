@@ -69,6 +69,20 @@ def _key(value: object) -> str:
     return "".join(ch for ch in str(value).lower().strip() if ch.isalnum())
 
 
+def _excel_sheet_data(sheet: pd.DataFrame, sheet_name: str) -> pd.DataFrame:
+    """Find the OHLCV header row in a worksheet and return its data block."""
+    required_aliases = [aliases for aliases in ALIASES.values()]
+    for row_index in range(min(len(sheet), 25)):
+        keys = {_key(value) for value in sheet.iloc[row_index].tolist()}
+        if all(keys.intersection(aliases) for aliases in required_aliases):
+            frame = sheet.iloc[row_index + 1 :].copy()
+            frame.columns = sheet.iloc[row_index].tolist()
+            return frame.dropna(how="all")
+    raise DataValidationError(
+        f'The worksheet "{sheet_name}" does not contain a recognizable OHLCV header row.'
+    )
+
+
 def clean_stock_data(source: BinaryIO | str | pd.DataFrame) -> pd.DataFrame:
     """Read, recognize and clean CSV/Excel OHLCV data without future information."""
     try:
@@ -77,11 +91,14 @@ def clean_stock_data(source: BinaryIO | str | pd.DataFrame) -> pd.DataFrame:
         else:
             name = str(getattr(source, "name", source)).lower()
             if name.endswith((".xlsx", ".xlsm", ".xls")):
-                sheets = pd.read_excel(source, sheet_name=None)
-                nonempty = [sheet for sheet in sheets.values() if not sheet.empty]
-                if not nonempty:
+                sheets = pd.read_excel(source, sheet_name=None, header=None)
+                populated = [(sheet_name, sheet) for sheet_name, sheet in sheets.items() if not sheet.dropna(how="all").empty]
+                if not populated:
                     raise DataValidationError("The uploaded workbook contains no data rows.")
-                frame = pd.concat(nonempty, ignore_index=True)
+                frame = pd.concat(
+                    [_excel_sheet_data(sheet, sheet_name) for sheet_name, sheet in populated],
+                    ignore_index=True,
+                )
             else:
                 frame = pd.read_csv(source)
     except DataValidationError:
